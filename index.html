@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>ТК СМР</title>
 <meta name="apple-mobile-web-app-title" content="ТК СМР">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,7 +34,8 @@
   --glass-blur:blur(22px) saturate(180%);
   --navy-glass:rgba(20,55,150,.68); --navy-glass-strong:rgba(37,110,240,.86);
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 *{transition:background-color .25s ease,color .25s ease,border-color .25s ease,box-shadow .25s ease,fill .25s ease,stroke .25s ease}
 /* ---- фон: мягкие цветные пятна под стеклом ---- */
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
@@ -136,6 +139,10 @@ header.compact .icobtn{width:32px;height:32px}
 .viewsel .pkbtn.all{font-weight:700}
 .viewsel .pkbtn.all.on{background:var(--org);border-color:var(--org)}
 .sp{margin-left:auto}
+.fgrp{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap;min-width:0}
+.fgrp-pk{margin-left:6px}
+.fgrp-pk>.fl{flex:0 0 auto}
+#pkSel>*{flex:0 0 auto}
 select,input[type=search]{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:inherit;
   font-size:13px;background:var(--card);color:var(--txt);max-width:280px}
 label.chk{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer;color:var(--dim)}
@@ -397,7 +404,9 @@ th.sorted .sar{opacity:1;color:var(--org)}
 #chart{overflow-x:auto}
 
 /* ---------- нижний таб-бар: плавающая стеклянная капсула ---------- */
-.bottomnav{display:none;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:40;
+.bottomnav{display:none;position:fixed;left:calc(10px + env(safe-area-inset-left));right:calc(10px + env(safe-area-inset-right));
+  bottom:calc(10px + env(safe-area-inset-bottom));z-index:40;max-width:520px;margin:0 auto;
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   /* прозрачнее, но с более сильным размытием — подписи остаются читаемыми */
   background:
     linear-gradient(180deg,rgba(255,255,255,.32),rgba(255,255,255,.04) 60%),
@@ -406,14 +415,28 @@ th.sorted .sar{opacity:1;color:var(--org)}
   border:1px solid var(--glass-border);border-radius:24px;
   box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 16px 34px -14px rgba(20,40,70,.4);
   padding:6px}
-.navbtn{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+.navbtn{position:relative;z-index:1;flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   background:none;border:0;padding:6px 2px;border-radius:16px;color:var(--dim);font:inherit;
-  font-size:10px;font-weight:600;letter-spacing:.1px;transition:color .15s,background .15s,box-shadow .15s,transform .12s ease}
-.navbtn svg{width:22px;height:22px;transition:transform .15s}
-.navbtn.on{color:var(--ink2);background:rgba(255,255,255,.72);
-  box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 4px 12px -6px rgba(20,40,70,.3)}
+  font-size:10px;font-weight:600;letter-spacing:.1px;transition:color .15s,transform .12s ease}
+.navbtn svg{width:22px;height:22px;transition:transform .2s ease}
+.navbtn.on,.navbtn:hover{color:var(--ink2);background:none;box-shadow:none}
 .navbtn.on svg{transform:translateY(-1px)}
-.navbtn:active{transform:scale(.92)}
+.navbtn.hot{color:var(--ink2)}
+.navbtn.hot svg{transform:scale(1.12)}
+/* «линза» — жидкое стекло под активной кнопкой; при ведении пальцем следует за ним и увеличивается */
+.nav-lens{position:absolute;z-index:0;top:6px;bottom:6px;left:0;width:0;border-radius:18px;pointer-events:none;
+  --x:6px;--s:1;transform:translateX(var(--x)) scale(var(--s));
+  background:rgba(255,255,255,.72);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 4px 12px -6px rgba(20,40,70,.3);
+  transition:transform .42s cubic-bezier(.3,1.35,.45,1),width .3s ease,background-color .2s ease,box-shadow .2s ease;opacity:0}
+.nav-lens.ready{opacity:1}
+.nav-lens.drag{--s:1.16;z-index:2;transition:transform .09s linear,width .2s ease,background-color .2s ease,box-shadow .2s ease;
+  background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.04) 42%,rgba(255,255,255,.1) 75%,rgba(255,255,255,.3));
+  -webkit-backdrop-filter:saturate(170%) brightness(1.05);backdrop-filter:saturate(170%) brightness(1.05);
+  box-shadow:0 0 0 1px rgba(255,255,255,.9) inset,0 1.5px 0 #fff inset,0 -2px 6px rgba(255,255,255,.55) inset,
+    0 0 14px rgba(46,117,182,.14) inset,0 10px 24px -8px rgba(20,40,70,.38)}
+.navbtn.hot svg{transform:scale(1.22)}
+.navbtn:active{transform:none}
 
 /* ---------- мобильный экран (iPhone, портрет и ландшафт) ---------- */
 @media(max-width:640px),(max-height:500px){
@@ -426,6 +449,12 @@ th.sorted .sar{opacity:1;color:var(--org)}
   .bar2{padding:8px 12px;gap:8px}
   .tabs{display:none}
   .sp{display:none}
+  .fl-per{display:none}
+  .fgrp{gap:6px}
+  .fgrp select{padding:6px 8px;font-size:12.5px}
+  .fgrp-pk{margin-left:0;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    margin-right:-12px;padding-right:12px}
+  .fgrp-pk::-webkit-scrollbar{display:none}
   main{padding:12px 12px 94px}
   .bottomnav{display:flex}
   .card{padding:12px 13px;margin-bottom:12px}
@@ -446,6 +475,12 @@ th.sorted .sar{opacity:1;color:var(--org)}
   .icobtn{width:30px;height:30px}
   .bar2{padding:6px 12px}
   .bottomnav{padding:4px;bottom:calc(6px + env(safe-area-inset-bottom))}
+  .nav-lens{top:4px;bottom:4px;border-radius:15px}
+  /* мало высоты: фильтры уезжают при прокрутке, закреплена только шапка */
+  .bar2{position:static}
+  /* чёлка сбоку в горизонтальной ориентации */
+  header,.bar2{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+  main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
   .navbtn{padding:3px 2px;gap:1px}
   .navbtn svg{width:19px;height:19px}
   .navbtn span{font-size:9px}
@@ -485,7 +520,9 @@ th.sorted .sar{opacity:1;color:var(--org)}
     background:linear-gradient(170deg,rgba(255,255,255,.07),rgba(255,255,255,.01) 46%),var(--glass-bg)}
   :root[data-theme="dark"] .bottomnav{
     background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.01) 60%),rgba(24,30,38,.42)}
-  :root[data-theme="dark"] .navbtn.on{background:rgba(255,255,255,.08);box-shadow:0 1px 0 rgba(255,255,255,.1) inset}
+  :root[data-theme="dark"] .nav-lens{background:rgba(255,255,255,.1);box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 4px 12px -6px rgba(0,0,0,.5)}
+  :root[data-theme="dark"] .nav-lens.drag{background:rgba(255,255,255,.08);
+    box-shadow:0 0 0 1px rgba(255,255,255,.35) inset,0 2px 0 rgba(255,255,255,.4) inset,0 -6px 14px -6px rgba(255,255,255,.2) inset,0 10px 24px -8px rgba(0,0,0,.6)}
   :root[data-theme="dark"] .pkbtn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}
   :root[data-theme="dark"] .minib{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12)}
   :root[data-theme="dark"] .tab:hover{background:rgba(255,255,255,.06)}
@@ -586,12 +623,16 @@ th.sorted .sar{opacity:1;color:var(--org)}
     <button class="tab" data-tab="anomalii">Аномалии и риски</button>
   </div>
   <div class="sp"></div>
-  <span class="fl">Период (по снимкам):</span>
-  <select id="pFrom"></select><span class="fl">→</span><select id="pTo"></select>
-  <button class="minib" id="pQuick" title="Последний отчётный интервал">неделя</button>
-  <button class="minib" id="pAll" title="От первого снимка до последнего">всё</button>
-  <span class="fl" style="margin-left:14px">ПК:</span>
-  <div id="pkSel" style="display:flex;gap:6px"></div>
+  <div class="fgrp">
+    <span class="fl fl-per">Период (по снимкам):</span>
+    <select id="pFrom"></select><span class="fl">→</span><select id="pTo"></select>
+    <button class="minib" id="pQuick" title="Последний отчётный интервал">неделя</button>
+    <button class="minib" id="pAll" title="От первого снимка до последнего">всё</button>
+  </div>
+  <div class="fgrp fgrp-pk">
+    <span class="fl">ПК:</span>
+    <div id="pkSel" style="display:flex;gap:6px"></div>
+  </div>
 </div>
 <div id="tmach" class="tmach" style="display:none"></div>
 
@@ -719,6 +760,7 @@ th.sorted .sar{opacity:1;color:var(--org)}
 </main>
 
 <nav class="bottomnav" id="bottomNav">
+  <i class="nav-lens" id="navLens"></i>
   <button class="tab navbtn" data-tab="obzor">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     <span>Обзор</span>
@@ -1231,10 +1273,21 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     obzor: 'Обзор', karta: 'Карта', krivaya: 'Кривая',
     dinamika: 'Динамика', anomalii: 'Риски'
   };
+  var lensDrag = false;
+  function placeLens() {
+    var lens = $('#navLens'), nav = $('#bottomNav'), b = $('#bottomNav .navbtn.on');
+    if (!lens || lensDrag || !b || !nav.offsetWidth) return;   // на широком экране панель скрыта
+    var first = !lens.classList.contains('ready');
+    if (first) lens.style.transition = 'none';
+    lens.style.width = b.offsetWidth + 'px';
+    lens.style.setProperty('--x', b.offsetLeft + 'px');
+    if (first) { void lens.offsetWidth; lens.style.transition = ''; lens.classList.add('ready'); }
+  }
   function render() {
     $$('.tab').forEach(function (t) { t.classList.toggle('on', t.dataset.tab === state.tab); });
     $$('.pane').forEach(function (p) { p.style.display = p.id === 'pane-' + state.tab ? '' : 'none'; });
     $('#pageTitle').textContent = $('#pageTitleMini').textContent = TAB_TITLES[state.tab] || 'ТК СМР';
+    placeLens();
     var lastKey = C.dkey(M.histDates[M.histDates.length - 1]);
     $('#tmach').style.display = C.dkey(state.to) === lastKey ? 'none' : '';
     $('#tmach').textContent = 'Ретроспективный просмотр: показано состояние на ' + C.fmtD(state.to) + ', а не на отчётную дату книги.';
@@ -1953,6 +2006,48 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     $$('.tab').forEach(function (t) { t.onclick = function () { state.tab = t.dataset.tab; render(); }; });
     $('#q').oninput = function () { state.q = this.value; if (state.tab === 'karta') renderKarta(); };
     $('#onlyLag').onchange = function () { state.onlyLag = this.checked; renderKarta(); };
+    (function () {
+      var nav = $('#bottomNav'), lens = $('#navLens'), btns = $$('#bottomNav .navbtn');
+      var hot = null, sx = 0, moved = false, pid = null;
+      function btnAt(x) {
+        var r = null;
+        btns.forEach(function (b) { var bb = b.getBoundingClientRect(); if (x >= bb.left && x <= bb.right) r = b; });
+        return r;
+      }
+      function follow(x) {
+        var nr = nav.getBoundingClientRect(), w = lens.offsetWidth || btns[0].offsetWidth;
+        lens.style.setProperty('--x', Math.max(4, Math.min(nr.width - w - 4, x - nr.left - w / 2)) + 'px');
+        var b = btnAt(x);
+        if (b !== hot) {
+          if (hot) hot.classList.remove('hot');
+          hot = b;
+          if (hot) { hot.classList.add('hot'); if (moved && navigator.vibrate) navigator.vibrate(6); }
+        }
+      }
+      nav.addEventListener('pointerdown', function (e) {
+        if (!M || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        pid = e.pointerId; sx = e.clientX; moved = false; lensDrag = true;
+        try { nav.setPointerCapture(pid); } catch (x) { }
+        lens.classList.add('drag');
+        follow(e.clientX);
+      });
+      nav.addEventListener('pointermove', function (e) {
+        if (e.pointerId !== pid) return;
+        if (Math.abs(e.clientX - sx) > 6) moved = true;
+        follow(e.clientX);
+      });
+      function end(e) {
+        if (e.pointerId !== pid) return;
+        pid = null; lensDrag = false;
+        lens.classList.remove('drag');
+        if (hot) hot.classList.remove('hot');
+        var b = hot; hot = null;
+        if (b && b.dataset.tab !== state.tab) { state.tab = b.dataset.tab; render(); } else placeLens();
+      }
+      nav.addEventListener('pointerup', end);
+      nav.addEventListener('pointercancel', end);
+      window.addEventListener('resize', function () { placeLens(); });
+    })();
     $$('#dynSeg button').forEach(function (b) {
       b.onclick = function () {
         state.dynSec = +b.dataset.sec;
