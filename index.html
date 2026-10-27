@@ -468,6 +468,13 @@ th.sorted .sar{opacity:1;color:var(--org)}
   .viewsel .pkbtn{flex:0 0 auto}
   #drop{min-height:60vh;margin:14px;padding:24px}
 }
+/* ---------- планшеты (Android, iPad): сенсорный экран шире телефона — нижняя капсула вместо верхних вкладок ---------- */
+@media (pointer:coarse) and (min-width:641px){
+  .bottomnav{display:flex}
+  .tabs{display:none}
+  .sp{display:none}
+  main{padding-bottom:104px}
+}
 /* ---------- ландшафт: мало высоты — уплотняем шапку/панели ---------- */
 @media(max-height:500px){
   header{padding-top:calc(6px + env(safe-area-inset-top));padding-bottom:6px}
